@@ -49,5 +49,47 @@ public class ClienteController {
             return "Error al registrar cliente: " + e.getMessage();
         }
     }
+
+    @PostMapping("/actualizar")
+    public String actualizar(@RequestParam int clienteId,
+                             @RequestParam String numeroCliente,
+                             @RequestParam String nombre,
+                             @RequestParam String apellidoPat,
+                             @RequestParam(required = false) String apellidoMat,
+                             @RequestParam String fechaNac,
+                             @RequestParam String rfc,
+                             @RequestParam String curp,
+                             @RequestParam String email,
+                             @RequestParam String celular,
+                             @RequestParam(required = false) String direccion,
+                             @RequestParam(required = false) String ciudad,
+                             @RequestParam(required = false) String estado,
+                             @RequestParam(required = false) String cp,
+                             @RequestParam String estatus) {
+        try {
+            cliente c = new cliente();
+            c.setClienteId(clienteId);
+            c.setNumeroCliente(numeroCliente);
+            c.setNombre(nombre);
+            c.setApellidoPat(apellidoPat);
+            c.setApellidoMat(apellidoMat);
+            c.setFechaNac(LocalDate.parse(fechaNac));
+            c.setRfc(rfc);
+            c.setCurp(curp);
+            c.setEmail(email);
+            c.setCelular(celular);
+            c.setDireccion(direccion);
+            c.setCiudad(ciudad);
+            c.setEstado(estado);
+            c.setCp(cp);
+            c.setEstatus(estatus);
+
+            new ClienteDAO().actualizarCliente(c);
+            return "Cliente actualizado correctamente";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error al actualizar cliente: " + e.getMessage();
+        }
+    }
 }
 
