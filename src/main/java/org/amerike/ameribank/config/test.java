@@ -1,13 +1,13 @@
 package org.amerike.ameribank.config;
 
-import org.amerike.ameribank.config.security.sec;
+import org.amerike.ameribank.config.security.security;
 
 public class test {
      public static void main(String[] args) {
-        sec.init();
-        System.out.println(sec.obtenerUrl());
-        System.out.println(sec.obtenerUsuario());
-        System.out.println(sec.obtenerPassword());
+        security.init();
+        System.out.println(security.obtenerUrl());
+        System.out.println(security.obtenerUsuario());
+        System.out.println(security.obtenerPassword());
     }
 }
 

@@ -1,7 +1,6 @@
 package org.amerike.ameribank.config.security;
 
 import javax.crypto.Cipher;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,7 +12,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Scanner;
 
-public class sec {
+public class security {
 
     private static String homeDir = System.getProperty("user.home"); // establecemos el home PATH
     private static Path secretsDir = Paths.get(homeDir, ".config", "ameribank", "secrets");
@@ -25,13 +24,12 @@ public class sec {
 
     private static boolean checkKeys() {
         try {
-            Files.createDirectories(secretsDir);
+            Files.createDirectories(secretsDir); // se crean directorios
         }catch (Exception e) {
             System.err.println("Error al generar directorios");
         }
 
-
-        if (Files.exists(rutaPrivateKey) && Files.exists(rutaPublicKey) && Files.exists(rutaCifrado)) {
+        if (Files.exists(rutaPrivateKey) && Files.exists(rutaPublicKey) && Files.exists(rutaCifrado)) { //verifica la existencia de los directorios
             System.out.println("Se encontro la llave publica y privada, y archivo encryptado...");
             return true;
         } else {
@@ -40,6 +38,7 @@ public class sec {
         }
     }
 
+    // Metodo generador de claves
     private static void generadorClaves() throws Exception {
         KeyPairGenerator generador = KeyPairGenerator.getInstance("RSA");
         generador.initialize(2048);
@@ -62,7 +61,7 @@ public class sec {
             fw.write(sb.toString());
         }
     }
-    ///
+    /// Metodo cifrador de credenciales
     private static void cifrador(String NombreBaseDeDatos, String User, String Password) throws Exception {
 
         byte[] claveBytes = Files.readAllBytes(Paths.get(rutaPublicKey.toString()));
@@ -83,7 +82,8 @@ public class sec {
         X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
         return KeyFactory.getInstance("RSA").generatePublic(spec);
     }
-    ///
+
+    /// Metodo descifrador de credenciales
     public static String[] obtenerCredenciales() throws Exception {
         byte[] claveBytes = Files.readAllBytes(Paths.get(rutaPrivateKey.toString()));
         PrivateKey clavePrivada = cargarClavePrivada(claveBytes);
@@ -102,7 +102,7 @@ public class sec {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
-    ///
+    /// Metodo input del usuario
     private static void escribirCredenciales() {
         try {
             System.out.println("Cifrando credenciales.");
@@ -120,7 +120,7 @@ public class sec {
             System.exit(1);
         }
     }
-    ///
+    // GetUrl
     public static String obtenerUrl()  {
         try {
             String[] datos = obtenerCredenciales();
@@ -132,6 +132,7 @@ public class sec {
             return null;
         }
     }
+    // GetUser
     public static String obtenerUsuario()  {
         try {
             String[] datos = obtenerCredenciales();
@@ -143,6 +144,7 @@ public class sec {
             return null;
         }
     }
+    // getPassword
     public static String obtenerPassword()  {
         try {
             String[] datos = obtenerCredenciales();
@@ -155,8 +157,7 @@ public class sec {
         }
     }
     ///
-
-
+    // metodo inicializador
     public static void init() {
         if (checkKeys()) {
             System.out.println("Continuando...");
