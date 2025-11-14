@@ -30,7 +30,7 @@ public class security {
         }
 
         if (Files.exists(rutaPrivateKey) && Files.exists(rutaPublicKey) && Files.exists(rutaCifrado)) { //verifica la existencia de los directorios
-            System.out.println("Se encontro la llave publica y privada, y archivo encryptado...");
+            System.out.println("Se encontraron los archivos de seguridad...");
             return true;
         } else {
             System.out.println("Creando archivos de cifrado.");
