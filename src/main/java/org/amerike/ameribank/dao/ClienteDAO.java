@@ -1,18 +1,22 @@
 package org.amerike.ameribank.dao;
 
+
 import org.amerike.ameribank.config.ConexionDB;
 import org.amerike.ameribank.model.cliente;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+
 public class ClienteDAO {
     public void registrarCliente(cliente c) throws Exception {
-        String sql = "INSERT INTO clientes (numero_cliente, nombre, apellido_pat, apellido_mat, fecha_nac, rfc, curp, email, celular, direccion, ciudad, estado, cp, estatus) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "CALL RegistraCliente(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
 
         try (Connection conn = ConexionDB.conectar();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
 
             stmt.setString(1, c.getNumeroCliente());
             stmt.setString(2, c.getNombre());
@@ -28,6 +32,7 @@ public class ClienteDAO {
             stmt.setString(12, c.getEstado());
             stmt.setString(13, c.getCp());
             stmt.setString(14, c.getEstatus());
+
 
             stmt.executeUpdate();
         }
