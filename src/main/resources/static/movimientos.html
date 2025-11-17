@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Movimientos - Amerike Bank</title>
+</head>
+<body>
+
+<h1>Gestión de Movimientos</h1>
+
+<h2>Realizar Operación</h2>
+<form id="movimientoForm">
+    <label for="tipoOperacion">Tipo de Operación:</label>
+    <select id="tipoOperacion" name="tipoOperacion">
+        <option value="RETIRO">Retiro</option>
+        <option value="DEPOSITO">Depósito</option>
+        <option value="TRANSFERENCIA">Transferencia</option>
+    </select>
+
+    <br><br>
+
+    <label for="cuentaId" id="labelCuentaId">ID de Cuenta:</label>
+    <input type="text" id="cuentaId" name="cuentaId">
+
+    <br><br>
+
+    <div id="campoCuentaDestino" style="display: none;">
+        <label for="cuentaDestino">Cuenta Destino (Número de Cuenta):</label>
+        <input type="text" id="cuentaDestino" name="cuentaDestino">
+        <br><br>
+    </div>
+
+    <div id="campoCuentaRemitente" style="display: none;">
+        <label for="cuentaRemitente">Cuenta Remitente:</label>
+        <input type="text" id="cuentaRemitente" name="cuentaRemitente">
+        <br><br>
+    </div>
+
+    <label for="monto">Monto:</label>
+    <input type="text" id="monto" name="monto">
+
+    <br><br>
+
+    <label for="descripcion">Descripción:</label>
+    <input type="text" id="descripcion" name="descripcion">
+
+    <br><br>
+
+    <button type="submit">Realizar Operación</button>
+</form>
+
+<hr>
+<h2>Consultar Historial</h2>
+
+<label for="consultaCuentaId">ID de Cuenta a consultar:</label>
+<input type="text" id="consultaCuentaId" placeholder="Ej: 1">
+<button id="btnConsultar">Consultar</button>
+
+<br><br>
+
+<table border="1" style="width:100%; border-collapse: collapse;">
+    <thead>
+    <tr>
+        <th>ID Mov.</th>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Monto</th>
+        <th>Descripción</th>
+        <th>Remitente</th>
+        <th>Receptor</th>
+    </tr>
+    </thead>
+    <tbody id="historialBody">
+    </tbody>
+</table>
+
+<script>
+    // --- 1. Lógica para mostrar/ocultar campos del formulario ---
+    const tipoOperacionSelect = document.getElementById('tipoOperacion');
+    const campoCuentaDestino = document.getElementById('campoCuentaDestino');
+    const campoCuentaRemitente = document.getElementById('campoCuentaRemitente');
+    const labelCuentaId = document.getElementById('labelCuentaId');
+
+    tipoOperacionSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        campoCuentaDestino.style.display = 'none';
+        campoCuentaRemitente.style.display = 'none';
+
+        if (tipo === 'RETIRO') {
+            labelCuentaId.textContent = 'ID de Cuenta:';
+        } else if (tipo === 'DEPOSITO') {
+            labelCuentaId.textContent = 'ID de Cuenta (Receptora):';
+            campoCuentaRemitente.style.display = 'block';
+        } else if (tipo === 'TRANSFERENCIA') {
+            labelCuentaId.textContent = 'ID de Cuenta (Origen):';
+            campoCuentaDestino.style.display = 'block';
+        }
+    });
+    tipoOperacionSelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('movimientoForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const tipo = document.getElementById('tipoOperacion').value;
+        const formData = new FormData();
+        let url = '';
+
+        if (tipo === 'RETIRO') {
+            url = '/api/movimientos/retiro';
+            formData.append('cuentaId', document.getElementById('cuentaId').value);
+            formData.append('monto', document.getElementById('monto').value);
+            formData.append('descripcion', document.getElementById('descripcion').value);
+
+        } else if (tipo === 'DEPOSITO') {
+            url = '/api/movimientos/deposito';
+            formData.append('cuentaId', document.getElementById('cuentaId').value);
+            formData.append('monto', document.getElementById('monto').value);
+            formData.append('descripcion', document.getElementById('descripcion').value);
+            formData.append('cuentaRemitente', document.getElementById('cuentaRemitente').value);
+
+        } else if (tipo === 'TRANSFERENCIA') {
+            url = '/api/movimientos/transferencia';
+            formData.append('cuentaOrigenId', document.getElementById('cuentaId').value);
+            formData.append('cuentaDestino', document.getElementById('cuentaDestino').value);
+            formData.append('monto', document.getElementById('monto').value);
+            formData.append('descripcion', document.getElementById('descripcion').value);
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.status === 'success') {
+                    alert('Éxito: ' + data.message);
+                    // Opcional: Limpiar formulario
+                    // event.target.reset();
+                } else {
+                    alert('Error: ' + (data.message || 'Error desconocido del servidor'));
+                }
+            } else {
+                alert('Error del Servidor (' + response.status + '): ' + (data.message || 'Sin mensaje'));
+            }
+        } catch (error) {
+            console.error('Error fatal en fetch:', error);
+            alert('ERROR FATAL: No se pudo procesar la respuesta. Revisa la consola (F12). Error: ' + error.message);
+        }
+    });
+
+    document.getElementById('btnConsultar').addEventListener('click', async function() {
+        const cuentaId = document.getElementById('consultaCuentaId').value;
+        const tbody = document.getElementById('historialBody');
+
+        tbody.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+
+        if (!cuentaId) {
+            tbody.innerHTML = '<tr><td colspan="7">Por favor, ingresa un ID de cuenta.</td></tr>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/movimientos/consulta?cuentaId=${cuentaId}&limite=20`);
+
+            if (!response.ok) {
+                throw new Error(`Error del servidor: ${response.status}`);
+            }
+
+            const movimientos = await response.json();
+
+            // Limpiar tabla para poner los datos buenos
+            tbody.innerHTML = '';
+
+            if (movimientos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">No se encontraron movimientos para esta cuenta.</td></tr>';
+                return;
+            }
+
+            // Llenar la tabla
+            movimientos.forEach(mov => {
+                const tr = document.createElement('tr');
+
+                // Formatear la fecha
+                const fecha = new Date(mov.fechaMovimiento).toLocaleString('es-ES');
+
+                tr.innerHTML = `
+                    <td>${mov.id}</td>
+                    <td>${fecha}</td>
+                    <td>${mov.tipoMovimiento}</td>
+                    <td>${mov.monto}</td>
+                    <td>${mov.descripcion}</td>
+                    <td>${mov.cuentaRemitente || '-'}</td>
+                    <td>${mov.cuentaReceptora || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        } catch (error) {
+            console.error('Error al consultar historial:', error);
+            tbody.innerHTML = `<tr><td colspan="7">Error al cargar el historial: ${error.message}</td></tr>`;
+        }
+    });
+
+</script>
+
+</body>
+</html>
