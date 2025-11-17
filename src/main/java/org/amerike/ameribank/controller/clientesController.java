@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
-public class ClienteController {
+public class clientesController {
 
     @PostMapping("/registrar")
     public String registrar(@RequestParam String numeroCliente,
