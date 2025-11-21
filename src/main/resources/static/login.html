@@ -27,9 +27,8 @@
         .error { color: red; font-weight: bold; }
         .success { color: green; font-weight: bold; }
 
-        /* Estilos para el Modal (Pop-up) de 2FA */
         #twoFactorModal {
-            display: none; /* Controlado por JS */
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -51,11 +50,10 @@
         .modal-content h2 { color: #007bff; }
         #twoFactorCode { margin-top: 15px; }
 
-        /* Nuevo estilo para mostrar el código de simulación */
         .simulated-code {
             font-size: 1.8em;
             font-weight: bold;
-            color: #28a745; /* Verde para simular éxito/entrega */
+            color: #28a745;
             padding: 10px;
             border: 2px dashed #28a74550;
             margin: 10px 0;
@@ -75,13 +73,11 @@
 
 <div id="mensaje" style="margin-top: 15px;"></div>
 
-<!-- Modal (Pop-up) para la verificación 2FA -->
 <div id="twoFactorModal">
     <div class="modal-content">
         <h2>Verificación 2FA Requerida</h2>
         <p>Llave generada en el servidor.</p>
 
-        <!-- Elemento donde se mostrará el código simulado -->
         <div id="simulatedCodeDisplay" class="simulated-code">
             Cargando código...
         </div>
@@ -96,6 +92,8 @@
     const LOGIN_URL = '/api/login/loggear';
     const GENERATE_2FA_URL = '/api/2fa/generate';
     const VERIFY_2FA_URL = '/api/2fa/verify';
+    const REDIRECT_URL_CLIENTE = 'http://localhost:8081/indexCli.html';
+    const REDIRECT_URL_ADMIN = 'http://localhost:8081/indexAdm.html';
 
     const form = document.getElementById('loginForm');
     const mensajeDiv = document.getElementById('mensaje');
@@ -113,16 +111,15 @@
     }
 
     function mostrarModal2FA() {
-        modal.style.display = 'flex'; // Usar flex para centrar
+        modal.style.display = 'flex';
         twoFactorCodeInput.value = '';
         twoFactorMensaje.textContent = '';
-        simulatedCodeDisplay.textContent = 'Generando...'; // Resetear el display del código
+        simulatedCodeDisplay.textContent = 'Generando...';
     }
 
-    // --- Lógica de la Primera Etapa: Login (Usuario/Contraseña) ---
     form.addEventListener('submit', function(event) {
         event.preventDefault();
-        mostrarMensaje('', ''); // Limpiar mensajes
+        mostrarMensaje('', '');
 
         const usr = document.getElementById('usr').value;
         const pwd = document.getElementById('pwd').value;
@@ -134,29 +131,32 @@
             body: JSON.stringify(credenciales)
         })
         .then(response => {
-            // CRÍTICO: Primero intentamos leer como JSON ya que el backend lo garantiza.
             return response.json()
                 .then(data => ({ status: response.status, data: data }))
-                .catch(() => ({ status: response.status, data: { message: 'Respuesta inválida o vacía.' } }));
+                .catch(() => ({ status: response.status, data: { message: 'Credenciales Incorrectas.' } }));
         })
         .then(({ status, data }) => {
-            // Verificar si el servidor respondió con 2FA_REQUIRED (estado 202 ACCEPTED)
-            if (status === 202 && data.status === '2FA_REQUIRED' && data.usuarioId) {
+
+            if (status === 200 && data.status === 'ADMIN_LOGIN' && data.usuarioId) {
+                mostrarMensaje('success', data.message || 'Inicio de sesión de Admin exitoso. Redirigiendo...');
+                window.location.href = REDIRECT_URL_ADMIN;
+            }
+
+            else if (status === 202 && data.status === '2FA_REQUIRED' && data.usuarioId) {
                 currentUsuarioId = data.usuarioId;
-                mostrarModal2FA(); // ¡Mostrar el pop-up!
-                generate2faKey(data.usuarioId); // Generar la llave en el servidor
+                mostrarModal2FA();
+                generate2faKey(data.usuarioId);
                 mostrarMensaje('success', data.message || 'Credenciales válidas. Verificación 2FA iniciada.');
             }
-            // Manejar errores de credenciales (401) o cualquier otro error
+
             else if (status === 401) {
                 mostrarMensaje('error', data.message || 'Credenciales incorrectas.');
             }
-            // Manejar un login exitoso si el backend hubiera devuelto 200 sin 2FA_REQUIRED
+
             else if (status >= 200 && status < 300) {
-                 // Si llega aquí, significa que el login fue OK sin 2FA (o el 2FA fue saltado/completado previamente)
                  mostrarMensaje('success', data.message || 'Inicio de sesión exitoso sin 2FA.');
             }
-            // Manejar errores del servidor (500)
+
             else {
                 mostrarMensaje('error', `Error ${status}: ${data.message || 'Ocurrió un error inesperado.'}`);
             }
@@ -167,7 +167,6 @@
         });
     });
 
-    // --- Lógica para Generar la Llave 2FA (Disparado después del login exitoso) ---
     function generate2faKey(usuarioId) {
          fetch(GENERATE_2FA_URL, {
             method: 'POST',
@@ -175,14 +174,12 @@
             body: JSON.stringify({ usuarioId })
         })
         .then(resp => {
-            // CRÍTICO: Leer la respuesta como JSON
             return resp.json()
                 .then(data => ({ ok: resp.ok, data: data }))
                 .catch(() => ({ ok: resp.ok, data: { code: 'N/A' } }));
         })
         .then(({ ok, data }) => {
             if (ok) {
-                 // Mostrar el código recibido del backend en el modal
                  simulatedCodeDisplay.textContent = data.code || 'ERROR_CODE';
                  twoFactorMensaje.textContent = `Llave generada en el servidor (30s). Cópiala para verificar.`;
                  twoFactorMensaje.className = 'success';
@@ -198,7 +195,6 @@
         });
     }
 
-    // --- Lógica de la Segunda Etapa: Verificación 2FA ---
     verify2faBtn.addEventListener('click', function() {
         const code = twoFactorCodeInput.value.trim();
 
@@ -216,14 +212,19 @@
         .then(response => {
             return response.text().then(text => {
                 if (response.ok) {
-                    // Éxito total de LOGIN + 2FA
-                    modal.style.display = 'none'; // Ocultar el pop-up
+                    modal.style.display = 'none';
                     mostrarMensaje('success', text || 'Inicio de sesión y verificación 2FA exitosos!');
+
+                    window.location.href = REDIRECT_URL_CLIENTE;
                 } else if (response.status === 401) {
-                    twoFactorMensaje.textContent = text || 'Código 2FA incorrecto o expirado.';
+                    const deniedMessage = "Acceso Denegado: Código incorrecto o expirado.";
+
+                    twoFactorMensaje.textContent = deniedMessage;
                     twoFactorMensaje.className = 'error';
+
+                    mostrarMensaje('error', deniedMessage);
                 } else {
-                    twoFactorMensaje.textContent = `Error: ${text || 'Error inesperado.'}`;
+                    twoFactorMensaje.textContent = `Error del Servidor: ${text || 'Error inesperado.'}`;
                     twoFactorMensaje.className = 'error';
                 }
             });

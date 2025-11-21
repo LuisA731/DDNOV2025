@@ -19,33 +19,30 @@ public class loginController {
     }
 
     @PostMapping("/loggear")
-    // Se cambia ResponseEntity<String> a ResponseEntity<?> para permitir el cuerpo JSON (Map)
     public ResponseEntity<?> iniciarSesion(@RequestBody login l) {
 
         try {
-            lDAO.validarCredenciales(l);
+            loginDAO.LoginResult resultado = lDAO.validarCredenciales(l);
+            int usuarioId = resultado.usuarioId;
+            boolean esAdmin = resultado.esAdmin;
 
-            // --- INICIO DE MODIFICACIÓN CRÍTICA PARA 2FA ---
-            // 1. Crear el objeto de respuesta JSON esperado por el frontend
             Map<String, Object> resp = new HashMap<>();
 
-            // 2. Definir el usuario ID.
-            // NOTA: Tu DAO actual solo retorna boolean/excepción. En un sistema real, el DAO
-            // debería retornar el ID del usuario. Asumimos 1 para propósitos de demostración.
-            int usuarioId = 1;
+            if (esAdmin) {
+                resp.put("status", "ADMIN_LOGIN");
+                resp.put("usuarioId", usuarioId);
+                resp.put("message", "Credenciales de Admin válidas. Requiere login en portal de administración.");
 
-            // 3. Setear las claves que el frontend busca para mostrar el modal 2FA
+                return ResponseEntity.ok(resp);
+            }
+
             resp.put("status", "2FA_REQUIRED");
             resp.put("usuarioId", usuarioId);
             resp.put("message", "Credenciales válidas. Requiere verificación 2FA.");
 
-            // 4. Retornar el objeto JSON con el estado HTTP 202 ACCEPTED
-            // El estado 202 es ideal para indicar que se requiere más procesamiento (2FA).
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(resp);
-            // --- FIN DE MODIFICACIÓN CRÍTICA ---
 
         } catch (RuntimeException e) {
-
             String mensajeError = e.getMessage();
 
             if (mensajeError != null && mensajeError.contains("Fallo en la validación de credenciales")) {

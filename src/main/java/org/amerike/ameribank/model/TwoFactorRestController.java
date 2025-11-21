@@ -28,6 +28,20 @@ public class TwoFactorRestController {
             return ResponseEntity.status(500).body("Error generando 2FA: " + e.getMessage());
         }
     }
+/*
+    // /api/2fa/verify
+    @PostMapping("/verify")
+    public ResponseEntity<String> verify(@RequestBody Map<String, Object> body) {
+        Integer usuarioId = body.get("usuarioId") instanceof Number ? ((Number) body.get("usuarioId")).intValue() : 1;
+        String code = body.get("code") == null ? "" : body.get("code").toString();
+        try {
+            boolean ok = svc.verify(usuarioId, code);
+            if (ok) return ResponseEntity.ok("lol xd.");
+            else return ResponseEntity.status(401).body("Verificación fallida o código expirado.");
+        } catch (SQLException e) {
+            return ResponseEntity.status(500).body("Error verificando 2FA: " + e.getMessage());
+        }
+    }*/
 
     // /api/2fa/verify
     @PostMapping("/verify")
@@ -36,13 +50,20 @@ public class TwoFactorRestController {
         String code = body.get("code") == null ? "" : body.get("code").toString();
         try {
             boolean ok = svc.verify(usuarioId, code);
-            if (ok) return ResponseEntity.ok("Sesión Iniciada.");
-            else return ResponseEntity.status(401).body("Verificación fallida o código expirado.");
+
+            if (ok) {
+                // Éxito: Devuelve un estado OK (200)
+                // No necesitas un cuerpo especial, el estado 200 es suficiente
+                return ResponseEntity.ok("Verificación 2FA exitosa.");
+            } else {
+                // Fallo de verificación: Devuelve 401 Unauthorized con el mensaje de denegación
+                return ResponseEntity.status(401).body("Acceso Denegado: Verificación fallida o código expirado.");
+            }
         } catch (SQLException e) {
+            // Error del servidor: Devuelve 500 Internal Server Error
             return ResponseEntity.status(500).body("Error verificando 2FA: " + e.getMessage());
         }
     }
-
 }
 
 
